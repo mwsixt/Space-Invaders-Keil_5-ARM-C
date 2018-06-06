@@ -1,0 +1,1605 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000                 AREA             library, CODE, READWRITE
+    2 00000000         
+    3 00000000 00000014 
+                       U0LSR   EQU              0x14        ; UART0 Line Status
+                                                             Register
+    4 00000000 E002C000 
+                       PINSEL0 EQU              0xE002C000
+    5 00000000 E002C004 
+                       PINSEL1 EQU              0xE002C004
+    6 00000000 E0028008 
+                       IO0DIR  EQU              0xE0028008
+    7 00000000 E0028018 
+                       IO1DIR  EQU              0xE0028018
+    8 00000000 E0028004 
+                       IO0SET  EQU              0xE0028004
+    9 00000000 E0028014 
+                       IO1SET  EQU              0xE0028014
+   10 00000000 E002800C 
+                       IO0CLR  EQU              0xE002800C
+   11 00000000 E002801C 
+                       IO1CLR  EQU              0xE002801C
+   12 00000000 E0028000 
+                       IO0PIN  EQU              0xE0028000
+   13 00000000 E0028010 
+                       IO1PIN  EQU              0xE0028010
+   14 00000000         
+   15 00000000 00000026 
+                       WHITE   EQU              0x26
+   16 00000000 00000002 
+                       RED     EQU              0x2
+   17 00000000 00000020 
+                       GREEN   EQU              0x20
+   18 00000000 00000004 
+                       BLUE    EQU              0x4
+   19 00000000 00000006 
+                       PURPLE  EQU              0x6
+   20 00000000 00000022 
+                       YELLOW  EQU              0x22
+   21 00000000 00000000 
+                       RGBOFF  EQU              0x0
+   22 00000000         
+   23 00000000 45 72 72 
+              6F 72 2C 
+              20 50 6C 
+              65 61 73 
+              65 20 65 
+              6E 74 65 
+              72 20 61 
+              20 34 20 
+              62 69 74 
+              20 62 69 
+              6E 61 72 
+              79 20 73 
+              74 72 69 
+              6E 67 20 
+              00       ledErr  =                "Error, Please enter a 4 bit bi
+nary string ",0
+   24 0000002B 00              ALIGN
+   25 0000002C 45 72 72 
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+              6F 72 2C 
+              20 50 6C 
+              65 61 73 
+              65 20 65 
+              6E 74 65 
+              72 20 77 
+              2C 72 2C 
+              67 2C 62 
+              2C 79 2C 
+              6F 72 20 
+              70 20 66 
+              6F 72 20 
+              61 20 63 
+              6F 6C 6F 
+              72 20 63 
+              68 6F 69 
+              63 65 20 
+              00       rgbErr  =                "Error, Please enter w,r,g,b,y,
+or p for a color choice ",0
+   26 00000063 00              ALIGN
+   27 00000064 45 72 72 
+              6F 72 2C 
+              20 50 6C 
+              65 61 73 
+              65 20 65 
+              6E 74 65 
+              72 20 61 
+              20 68 65 
+              78 61 64 
+              65 63 69 
+              6D 61 6C 
+              20 62 69 
+              74 20 00 segErr  =                "Error, Please enter a hexadeci
+mal bit ",0
+   28 0000008B 00              ALIGN
+   29 0000008C 57 68 69 
+              63 68 20 
+              73 65 67 
+              6D 65 6E 
+              74 20 77 
+              6F 75 6C 
+              64 20 79 
+              6F 75 20 
+              6C 69 6B 
+              65 20 74 
+              6F 20 73 
+              68 6F 77 
+              3F 20 28 
+              31 2D 34 
+              29 00    segPrompt
+                               =                "Which segment would you like t
+o show? (1-4)",0
+   30 000000B8                 ALIGN
+   31 000000B8 04      segPos  =                4
+   32 000000B9 00 00 00        ALIGN
+   33 000000BC 31 31 31 
+              31 31 31 
+              31 31 00 tailLoc =                "11111111",0
+   34 000000C5 00 00 00        ALIGN
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   35 000000C8 34 66 35 
+              66 00    input   =                "4f5f",0
+   36 000000CD 00 00 00        ALIGN
+   37 000000D0         read_character
+   38 000000D0 E59F14FC        LDR              r1,=0xE000C000 
+                                                            ;Load Base Address 
+                                                            
+   39 000000D4 E5D13014        LDRB             r3,[r1,#U0LSR] ;Load Line Statu
+                                                            s Register 
+   40 000000D8 E2032001        AND              r2,r3,#1    ;And 1st bit of Lin
+                                                            e status register w
+                                                            ith one 
+   41 000000DC E3520000        CMP              r2,#0       ;Compare result wit
+                                                            h false
+   42 000000E0 0AFFFFFA        BEQ              read_character ;If false, repea
+                                                            t until status chan
+                                                            ges
+   43 000000E4 E1A00003        MOV              r0,r3       ;Copy line status r
+                                                            egister to temp reg
+                                                            ister
+   44 000000E8 E5D10000        LDRB             r0,[r1]     ;Load base with tem
+                                                            p register 
+   45 000000EC E1A01000        MOV              r1,r0
+   46 000000F0 E12FFF1E        BX               lr
+   47 000000F4         
+   48 000000F4         output_character
+   49 000000F4 E59F14D8        LDR              r1,=0xE000C000 
+                                                            ;r1 = Base register
+                                                            
+   50 000000F8 E5D13014        LDRB             r3,[r1,#U0LSR] ;Load Line Statu
+                                                            s register to r3
+   51 000000FC E2032020        AND              r2,r3,#32   ;Anding 5th bit of 
+                                                            line status registe
+                                                            r and storing in re
+                                                            sult
+   52 00000100 E3520000        CMP              r2,#0       ;Compare result to 
+                                                            0
+   53 00000104 0AFFFFFA        BEQ              output_character ;If val at lin
+                                                            e status register=0
+                                                            , loop back to star
+                                                            t
+   54 00000108 E5810000        STR              r0,[r1]     ;Else, Load value o
+                                                            f receiver buffer r
+                                                            egister with line s
+                                                            tatus register
+   55 0000010C E12FFF1E        BX               lr
+   56 00000110         
+   57 00000110         read_string
+   58 00000110 E92D403F        STMFD            sp!, {r0-r5,lr}
+   59 00000114 E59F44BC        LDR              r4,=input   ;Set head to predef
+                                                            ined value
+   60 00000118 E1A05004        MOV              r5,r4       ;Set tail to head
+   61 0000011C E59F14B0        LDR              r1,=0xE000C000 ;Set r1 to UART 
+                                                            base address
+   62 00000120         read_loop
+   63 00000120 EBFFFFEA        BL               read_character ;Goto read chara
+                                                            cter sub
+   64 00000124 EBFFFFF2        BL               output_character ;Goto output c
+                                                            haracter sub
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+   65 00000128 E350000D        CMP              r0,#13      ;Is char enter?
+   66 0000012C 1A000000        BNE              not_end     ;If not, then skip 
+                                                            next step
+   67 00000130 E3A00000        MOV              r0,#0       ;Change read char t
+                                                            o null
+   68 00000134         not_end
+   69 00000134 E5C50000        STRB             r0,[r5]     ;Store char to tail
+                                                            
+   70 00000138 E2855001        ADD              r5,r5,#1    ;Increment tail
+   71 0000013C E3500000        CMP              r0,#0       ;Is char null?
+   72 00000140 1AFFFFF6        BNE              read_loop   ;If not, loop 
+   73 00000144 E3A0000A        MOV              r0, #10     ;Else, store char t
+                                                            o vertical tab
+   74 00000148 E5810000        STR              r0,[r1]     ;Output vertical ta
+                                                            b
+   75 0000014C E3A0000D        MOV              r0, #13     ;Store char to carr
+                                                            iage return
+   76 00000150 E5810000        STR              r0,[r1]     ;Output carriage re
+                                                            turn
+   77 00000154 E1A05004        MOV              r5,r4       ;Set tail to head
+   78 00000158 E8BD403F        LDMFD            sp!, {r0-r5,lr} ;Restore link r
+                                                            egister
+   79 0000015C E12FFF1E        BX               lr
+   80 00000160         
+   81 00000160         output_string
+   82 00000160 E92D4000        STMFD            SP!,{lr}    ;Store link address
+                                                            
+   83 00000164 E1A04000        MOV              r4,r0
+   84 00000168 E5D40000        LDRB             r0,[r4]     ;Load value from he
+                                                            ad
+   85 0000016C E59F1460        LDR              r1,=0xE000C000 ;Set r1 to UART 
+                                                            base
+   86 00000170         output_string_loop
+   87 00000170 EBFFFFDF        BL               output_character ;Goto output_c
+                                                            haracter with link
+   88 00000174 E2844001        ADD              r4,r4,#1    ;Increment tail to 
+                                                            next mem location
+   89 00000178 E5D40000        LDRB             r0,[r4]     ;Load head with cha
+                                                            r
+   90 0000017C E3500000        CMP              r0,#0       ;Compare r0 with nu
+                                                            ll
+   91 00000180 0A000000        BEQ              output_string_end 
+                                                            ;If so, goto end
+   92 00000184 EAFFFFF9        B                output_string_loop 
+                                                            ;Else, goto loop
+   93 00000188         output_string_end
+   94 00000188 E3A0000A        MOV              r0, #10     ;Store char as vert
+                                                             tab
+   95 0000018C E5810000        STR              r0,[r1]     ;Output vert tab
+   96 00000190 E3A0000D        MOV              r0, #13     ;Store char as carr
+                                                            iage return
+   97 00000194 E5810000        STR              r0,[r1]     ;Output carr return
+                                                            
+   98 00000198 E1A05004        MOV              r5,r4
+   99 0000019C E1A00004        MOV              r0,r4
+  100 000001A0 E8BD4000        LDMFD            sp!, {lr}   ;load link address
+  101 000001A4 E12FFF1E        BX               lr          ;Link back
+  102 000001A8         
+  103 000001A8         display_digit_on_7_seg
+
+
+
+ARM Macro Assembler    Page 5 
+
+
+  104 000001A8 E92D4000        STMFD            SP!,{lr}    ;Store link registe
+                                                            r
+  105 000001AC         ;r4 begining r5 end
+  106 000001AC E3A06000        MOV              r6,#0       ;Store 0 to r6
+  107 000001B0 E59F3424        LDR              r3,=segPos  ;Sets r3 to equal l
+                                                            ocation of segment 
+                                                            position counter
+  108 000001B4 E5D37000        LDRB             r7,[r3]     ;Sets r7 to value o
+                                                            f segment position 
+                                                            counter
+  109 000001B8 E3570004        CMP              r7,#4       ;Is seg pos counter
+                                                             4?
+  110 000001BC 1A000001        BNE              dglup       ;If not goto loop
+  111 000001C0 E59F3418        LDR              r3,=tailLoc ;If it is, load tai
+                                                            l location into r3
+  112 000001C4 E5834000        STR              r4,[r3]     ;Store head to tail
+                                                             location
+  113 000001C8         dglup
+  114 000001C8 E59F3410        LDR              r3,=tailLoc ;Set r3 to location
+                                                             of tail location
+  115 000001CC E5935000        LDR              r5,[r3]     ;Load tail location
+                                                             into r5
+  116 000001D0         
+  117 000001D0 E5D53000        LDRB             r3,[r5]     ;Load char
+  118 000001D4         
+  119 000001D4 E3530000        CMP              r3,#0
+  120 000001D8 0A00003B        BEQ              tisNull
+  121 000001DC E3530023        CMP              r3,#35      ;Is char #?
+  122 000001E0 0A000035        BEQ              tisInit     ;Goto init
+  123 000001E4         
+  124 000001E4 E59F93F8        LDR              r9,=IO0SET
+  125 000001E8 E1D990B0        LDRH             r9,[r9]
+  126 000001EC E59F13F4        LDR              r1,=IO0CLR  ;Load clear registe
+                                                            r
+  127 000001F0 E59F23F4        LDR              r2,=46976   ;Clear all segs
+  128 000001F4 E5812000        STR              r2,[r1]     ;Store to clear reg
+                                                            ister
+  129 000001F8 E3530021        CMP              r3,#33      ;Is char !?
+  130 000001FC 0A000037        BEQ              tisClear    ;Goto clear
+  131 00000200         
+  132 00000200 E3530030        CMP              r3,#0x30    ;Is char 1-9 or A-F
+                                                             (not case sensitiv
+                                                            e)
+  133 00000204 0A000037        BEQ              tis0        ;Goto respective la
+                                                            bel
+  134 00000208 E3530031        CMP              r3,#0x31
+  135 0000020C 0A000037        BEQ              tis1
+  136 00000210 E3530032        CMP              r3,#0x32
+  137 00000214 0A000037        BEQ              tis2
+  138 00000218 E3530033        CMP              r3,#0x33
+  139 0000021C 0A000037        BEQ              tis3
+  140 00000220 E3530034        CMP              r3,#0x34
+  141 00000224 0A000037        BEQ              tis4
+  142 00000228 E3530035        CMP              r3,#0x35
+  143 0000022C 0A000037        BEQ              tis5
+  144 00000230 E3530036        CMP              r3,#0x36
+  145 00000234 0A000037        BEQ              tis6
+  146 00000238 E3530037        CMP              r3,#0x37
+  147 0000023C 0A000037        BEQ              tis7
+
+
+
+ARM Macro Assembler    Page 6 
+
+
+  148 00000240 E3530038        CMP              r3,#0x38
+  149 00000244 0A000037        BEQ              tis8
+  150 00000248 E3530039        CMP              r3,#0x39
+  151 0000024C 0A000037        BEQ              tis9
+  152 00000250 E3530041        CMP              r3,#0x41
+  153 00000254 0A000037        BEQ              tisA
+  154 00000258 E3530061        CMP              r3,#0x61
+  155 0000025C 0A000035        BEQ              tisA
+  156 00000260 E3530042        CMP              r3,#0x42
+  157 00000264 0A000035        BEQ              tisB
+  158 00000268 E3530062        CMP              r3,#0x62
+  159 0000026C 0A000033        BEQ              tisB
+  160 00000270 E3530043        CMP              r3,#0x43
+  161 00000274 0A000033        BEQ              tisC
+  162 00000278 E3530063        CMP              r3,#0x63
+  163 0000027C 0A000031        BEQ              tisC
+  164 00000280 E3530044        CMP              r3,#0x44
+  165 00000284 0A000031        BEQ              tisD
+  166 00000288 E3530064        CMP              r3,#0x64
+  167 0000028C 0A00002F        BEQ              tisD
+  168 00000290 E3530045        CMP              r3,#0x45
+  169 00000294 0A00002F        BEQ              tisE
+  170 00000298 E3530065        CMP              r3,#0x65
+  171 0000029C 0A00002D        BEQ              tisE
+  172 000002A0 E3530046        CMP              r3,#0x46
+  173 000002A4 0A00002D        BEQ              tisF
+  174 000002A8 E3530066        CMP              r3,#0x66
+  175 000002AC 0A00002B        BEQ              tisF
+  176 000002B0 EA000003        B                tisInv      ;If anything else, 
+                                                            goto err
+  177 000002B4 E8BD4000        LDMFD            sp!, {lr}   ;Restore link regis
+                                                            ter
+  178 000002B8 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  179 000002BC         tisInit
+  180 000002BC E3A06902        LDR              r6,=32768   ;Load g segment
+  181 000002C0 EA000028        B                sevenSegCont
+  182 000002C4         tisInv
+  183 000002C4 E1A06009        MOV              r6,r9       ;If invalid value, 
+                                                            ignore it
+  184 000002C8 EA000026        B                sevenSegCont
+  185 000002CC         tisNull
+  186 000002CC E59F330C        LDR              r3,=tailLoc ;Load r3 with tailL
+                                                            oc location
+  187 000002D0 E2455001        SUB              r5,r5,#1    ;Subtract r5 by 1
+  188 000002D4 E5835000        STR              r5,[r3]     ;Store to tailLoc
+  189 000002D8         
+  190 000002D8 E8BD4000        LDMFD            sp!, {lr}   ;Load link reg 
+  191 000002DC E12FFF1E        BX               lr          ;Leave program
+  192 000002E0         tisClear
+  193 000002E0 E3A06000        LDR              r6,=0       ;Load 0
+  194 000002E4 EA00001F        B                sevenSegCont
+  195 000002E8         tis0
+  196 000002E8 E3A06DDE        LDR              r6, =14208  ;14208 turns a,b,c,
+                                                            d,e,f on
+  197 000002EC EA00001D        B                sevenSegCont
+  198 000002F0         tis1
+  199 000002F0 E3A06C03        LDR              r6, =0x300  ;768 turns b&c on
+  200 000002F4 EA00001B        B                sevenSegCont
+
+
+
+ARM Macro Assembler    Page 7 
+
+
+  201 000002F8         tis2
+  202 000002F8 E59F62F0        LDR              r6, =0x9580 ;48512 turns a,b,g,
+                                                            e,d on
+  203 000002FC EA000019        B                sevenSegCont
+  204 00000300         tis3
+  205 00000300 E59F62EC        LDR              r6, =0x8780 ;40832 turns a,b,c,
+                                                            d,g on
+  206 00000304 EA000017        B                sevenSegCont
+  207 00000308         tis4
+  208 00000308 E3A06CA3        LDR              r6, =0xA300 ;41728 turns b,c,f,
+                                                            g on
+  209 0000030C EA000015        B                sevenSegCont
+  210 00000310         tis5
+  211 00000310 E59F62E0        LDR              r6, =0xA680 ;42624 turns a,c,d,
+                                                            f,g on
+  212 00000314 EA000013        B                sevenSegCont
+  213 00000318         tis6
+  214 00000318 E59F62DC        LDR              r6, =0xB680 ;46720 turns a,c,d,
+                                                            e,f,g on
+  215 0000031C EA000011        B                sevenSegCont
+  216 00000320         tis7
+  217 00000320 E3A06D0E        LDR              r6, =0x380  ;896 turns a,b,c on
+                                                            
+  218 00000324 EA00000F        B                sevenSegCont
+  219 00000328         tis8
+  220 00000328 E59F62BC        LDR              r6, =0xB780 ;46976 turns all of
+                                                             them on
+  221 0000032C EA00000D        B                sevenSegCont
+  222 00000330         tis9
+  223 00000330 E59F62C8        LDR              r6, =0xA380 ;41856 turns a,b,c,
+                                                            f,g on
+  224 00000334 EA00000B        B                sevenSegCont
+  225 00000338         tisA
+  226 00000338 E59F62C4        LDR              r6, =0xB380 ;45952 turns a,b,c,
+                                                            e,f,g on
+  227 0000033C EA000009        B                sevenSegCont
+  228 00000340         tisB
+  229 00000340 E3A06CB6        LDR              r6, =0xB600 ;46592 turns c,d,e,
+                                                            f,g on
+  230 00000344 EA000007        B                sevenSegCont
+  231 00000348         tisC
+  232 00000348 E3A06DD2        LDR              r6, =0x3480 ;13440 turns a,d,e,
+                                                            f on
+  233 0000034C EA000005        B                sevenSegCont
+  234 00000350         tisD
+  235 00000350 E3A06C97        LDR              r6, =0x9700 ;38656 turns b,c,d,
+                                                            g on
+  236 00000354 EA000003        B                sevenSegCont
+  237 00000358         tisE
+  238 00000358 E59F62A8        LDR              r6, =0xB480 ;46208 turns a,d,e,
+                                                            f,g on
+  239 0000035C EA000001        B                sevenSegCont
+  240 00000360         tisF
+  241 00000360 E59F62A4        LDR              r6, =0xB080 ;45184 turns a,e,f,
+                                                            g on
+  242 00000364 EAFFFFFF        B                sevenSegCont
+  243 00000368         sevenSegCont
+  244 00000368 EAFFFFFF        B                sevenSegFin
+  245 0000036C         ;LDRB r3,[r4,#1]   ;Load next char
+
+
+
+ARM Macro Assembler    Page 8 
+
+
+  246 0000036C         ;CMP r3,#49    ;Is char 1-4?
+  247 0000036C         ;BLE segsel1    ;Goto respective segsel
+  248 0000036C         ;CMP r3,#50
+  249 0000036C         ;BEQ segsel2
+  250 0000036C         ;CMP r3,#51
+  251 0000036C         ;BEQ segsel3
+  252 0000036C         ;CMP r3,#52
+  253 0000036C         ;BEQ segsel4
+  254 0000036C         ;CMP r3,#53
+  255 0000036C         ;BEQ segsel5
+  256 0000036C         ;B segsel1
+  257 0000036C         sevenSegFin
+  258 0000036C E59F129C        LDR              r1,=IO0DIR  ;Load direction cho
+                                                            oser
+  259 00000370 E5913000        LDR              r3,[r1]
+  260 00000374 E3A08826        LDR              r8,=2490368
+  261 00000378 E0033008        AND              r3,r3,r8
+  262 0000037C E59F2268        LDR              r2,=46976   ;Set reg to all seg
+                                                            s
+  263 00000380 E0822007        ADD              r2,r2,r7    ;Add desired digit
+  264 00000384 E0822003        ADD              r2,r2,r3
+  265 00000388 E5812000        STR              r2,[r1]     ;Store to direction
+                                                            
+  266 0000038C E1A02006        MOV              r2,r6       ;Load desired segme
+                                                            nt value
+  267 00000390 E59F124C        LDR              r1,=IO0SET  ;Load set register
+  268 00000394 E5812000        STR              r2,[r1]     ;Store to set reg
+  269 00000398         
+  270 00000398 E5D53001        LDRB             r3,[r5,#1]  ;Load r3 with locat
+                                                            ion of tail+1
+  271 0000039C E3530000        CMP              r3,#0       ;Is it 0?
+  272 000003A0 1A000004        BNE              INCR        ;If not goto INCR
+  273 000003A4         
+  274 000003A4 E59F3230        LDR              r3,=segPos  ;Set r3 to segment 
+                                                            position
+  275 000003A8 E3A07004        MOV              r7,#4       ;Set r7 to 4
+  276 000003AC E5C37000        STRB             r7,[r3]     ;Store 4 to segment
+                                                             position
+  277 000003B0         sevenSegExit
+  278 000003B0 E8BD4000        LDMFD            sp!, {lr}   ;Restore Link addre
+                                                            ss
+  279 000003B4 E12FFF1E        BX               lr          ;Link back
+  280 000003B8         
+  281 000003B8         INCR
+  282 000003B8 E59F321C        LDR              r3,=segPos  ;Load segPos locati
+                                                            on
+  283 000003BC E0877007        ADD              r7,r7,r7    ;double r7 to get n
+                                                            ext seg,[r1]
+  284 000003C0 E5C37000        STRB             r7,[r3]     ;Store new segPos
+  285 000003C4         
+  286 000003C4 E59F3214        LDR              r3,=tailLoc ;Load tailLoc locat
+                                                            ion
+  287 000003C8 E2855001        ADD              r5,r5,#1    ;Increment r5
+  288 000003CC E5835000        STR              r5,[r3]     ;Store in tailLoc 
+  289 000003D0 EAFFFFF6        B                sevenSegExit ;Exit
+  290 000003D4         seg_err
+  291 000003D4 E59F4238        LDR              r4,=segErr  ;Load error prompt
+  292 000003D8 EBFFFF60        BL               output_string ;Output prompt
+  293 000003DC EBFFFF4B        BL               read_string ;Scan for input
+
+
+
+ARM Macro Assembler    Page 9 
+
+
+  294 000003E0 EAFFFF70        B                display_digit_on_7_seg 
+                                                            ;Rerun subroutine 
+  295 000003E4         
+  296 000003E4         ;segsel1 
+  297 000003E4         ;LDR r7,=4    ;Set desired digit 1
+  298 000003E4         ;B sevenSegFin   ;Goto Fin
+  299 000003E4         ;segsel2 
+  300 000003E4         ;LDR r7,=8    ;Set desired digit 2
+  301 000003E4         ;B sevenSegFin   ;Goto Fin
+  302 000003E4         ;segsel3 
+  303 000003E4         ;LDR r7,=16    ;Set desired digit 3
+  304 000003E4         ;B sevenSegFin   ;Goto Fin
+  305 000003E4         ;segsel4 
+  306 000003E4         ;LDR r7,=32    ;Set desired digit 4
+  307 000003E4         ;B sevenSegFin   ;Goto Fin 
+  308 000003E4         ;segsel5 
+  309 000003E4         ;LDR r7,=60    ;Set desired digit all
+  310 000003E4         ;B sevenSegFin   ;Goto Fin 
+  311 000003E4         
+  312 000003E4         illuminate_RGB_LED
+  313 000003E4 E92D5FFF        STMFD            SP!,{r0-r12,lr} ;Store link reg
+                                                            ister
+  314 000003E8         color_select
+  315 000003E8 E3500077        CMP              r0,#119     ;Is val=w?
+  316 000003EC 0A00000A        BEQ              white       ;Goto white
+  317 000003F0 E3500072        CMP              r0,#114     ;Is val=r?
+  318 000003F4 0A00000C        BEQ              red         ;Goto red
+  319 000003F8 E3500067        CMP              r0,#103     ;Is val=g?
+  320 000003FC 0A000008        BEQ              green       ;Goto green
+  321 00000400 E3500062        CMP              r0,#98      ;Is val=b?
+  322 00000404 0A00000A        BEQ              blue        ;Goto blue
+  323 00000408 E3500079        CMP              r0,#121     ;Is val=y?
+  324 0000040C 0A00000A        BEQ              yellow      ;Goto yellow
+  325 00000410 E3500070        CMP              r0,#112     ;Is val=p?
+  326 00000414 0A00000A        BEQ              purple      ;Goto purple
+  327 00000418 EA000012        B                rgb_err     ;Else, goto error
+  328 0000041C         white
+  329 0000041C E3A00026        LDR              r0,=WHITE   ;Val=WHITE
+  330 00000420 EA000009        B                rgb_cont    ;Goto cont
+  331 00000424         green
+  332 00000424 E3A00020        LDR              r0,=GREEN   ;Val=GREEN
+  333 00000428 EA000007        B                rgb_cont    ;Goto cont
+  334 0000042C         red
+  335 0000042C E3A00002        LDR              r0,=RED     ;Val=RED
+  336 00000430 EA000005        B                rgb_cont    ;Goto cont
+  337 00000434         blue
+  338 00000434 E3A00004        LDR              r0,=BLUE    ;Val=BLUE
+  339 00000438 EA000003        B                rgb_cont    ;Goto cont
+  340 0000043C         yellow
+  341 0000043C E3A00022        LDR              r0,=YELLOW  ;Val=YELLOW
+  342 00000440 EA000001        B                rgb_cont    ;Goto cont
+  343 00000444         purple
+  344 00000444 E3A00006        LDR              r0,=PURPLE  ;Val=PURPLE
+  345 00000448 EAFFFFFF        B                rgb_cont    ;Goto cont
+  346 0000044C         rgb_cont
+  347 0000044C E59F11C4        LDR              r1,=PINSEL1 ;Select pinsel1
+  348 00000450 E3A02001        MOV              r2,#1       ;store 1
+  349 00000454 E5C12000        STRB             r2,[r1]     ;Write 1 to pinsel1
+                                                            
+
+
+
+ARM Macro Assembler    Page 10 
+
+
+  350 00000458 E59F11B0        LDR              r1,=IO0DIR  ;Load IO0DIR
+  351 0000045C E5C10000        STRB             r0,[r1]     ;Store val
+  352 00000460 E8BD5FFF        LDMFD            sp!, {r0-r12,lr} ;Restore Link 
+                                                            address
+  353 00000464         
+  354 00000464 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  355 00000468         rgb_err
+  356 00000468 E59F41AC        LDR              r4,=rgbErr  ;load error prompt
+  357 0000046C EBFFFF3B        BL               output_string ;Output prompt
+  358 00000470 EAFFFFDB        B                illuminate_RGB_LED ;Goto subrou
+                                                            tine start
+  359 00000474         
+  360 00000474         
+  361 00000474         read_from_push_btns
+  362 00000474 E92D4000        STMFD            SP!,{lr}    ;Store link registe
+                                                            r
+  363 00000478 E3A00105        MOV              r0,#0x40000001 ;Goto arbitrary 
+                                                            readable memory
+  364 0000047C E59F119C        LDR              r1,=IO1DIR  ;Load direction reg
+                                                            
+  365 00000480 E5912000        LDR              r2,[r1]     ;Load data at direc
+                                                            tion reg
+  366 00000484 E2022000        AND              r2,r2,#0    ;Invert
+  367 00000488 E5812000        STR              r2,[r1]     ;Store back
+  368 0000048C E59F1190        LDR              r1,=IO1PIN  ;Load pin register
+  369 00000490 E5D12002        LDRB             r2,[r1,#2]  ;Load pin reg offse
+                                                            t by 2
+  370 00000494 E1A02222        LSR              r2,r2,#4    ;Left shift by 4
+  371 00000498 E262200F        RSB              r2,r2,#15   ;Subtract 15
+  372 0000049C         
+  373 0000049C E3A06000        MOV              r6,#0       ;Set r6 to 0
+  374 000004A0 E2027008        AND              r7,r2,#8    ;Check 3rd bit
+  375 000004A4 E3570001        CMP              r7,#1       ;Is it 1?
+  376 000004A8 1A000000        BNE              stage_two   ;If not, Goto stage
+                                                             two
+  377 000004AC E2866001        ADD              r6,r6,#1    ;Add 1 to r6
+  378 000004B0         stage_two
+  379 000004B0 E2027004        AND              r7,r2,#4    ;Check 2nd bit
+  380 000004B4 E3570001        CMP              r7,#1       ;Is it 1?
+  381 000004B8 1A000000        BNE              stage_three ;If not, Goto stage
+                                                             three
+  382 000004BC E2866002        ADD              r6,r6,#2    ;Add 2
+  383 000004C0         stage_three
+  384 000004C0 E2027002        AND              r7,r2,#2    ;Check 1st bit
+  385 000004C4 E3570001        CMP              r7,#1       ;Is it 1?
+  386 000004C8 1A000000        BNE              stage_four  ;If not, Goto stage
+                                                             four
+  387 000004CC E2866004        ADD              r6,r6,#4    ;Add 4
+  388 000004D0         stage_four
+  389 000004D0 E2027001        AND              r7,r2,#1    ;Check 0th bit
+  390 000004D4 E3570001        CMP              r7,#1       ;is it 1?
+  391 000004D8 1A000000        BNE              stage_fin   ;If not, Goto fin
+  392 000004DC E2866008        ADD              r6,r6,#8    ;Add 8
+  393 000004E0         stage_fin
+  394 000004E0         ;MOV r2,r6
+  395 000004E0 E3520009        CMP              r2,#9       ;Is r2 9 or less?
+  396 000004E4 DA000003        BLE              btn_digit   ;Goto digit selecto
+                                                            r
+
+
+
+ARM Macro Assembler    Page 11 
+
+
+  397 000004E8 E352000F        CMP              r2,#15      ;is r2 A-F?
+  398 000004EC DA000005        BLE              btn_letter  ;Goto Letter
+  399 000004F0 E8BD4000        LDMFD            sp!, {lr}   ;Restore link regis
+                                                            ter
+  400 000004F4 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  401 000004F8         btn_digit
+  402 000004F8 E2822030        ADD              r2,r2,#48   ;Get Ascii value of
+                                                             digit
+  403 000004FC E5C02000        STRB             r2,[r0]     ;Store to val
+  404 00000500 E2800001        ADD              r0,r0,#1    ;Increment val
+  405 00000504 EA000005        B                btn_end     ;Goto end
+  406 00000508         btn_letter
+  407 00000508 E3A03031        MOV              r3,#49      ;Set reg to 1 ascii
+                                                             code
+  408 0000050C E5C03000        STRB             r3,[r0]     ;Store to val
+  409 00000510 E2800001        ADD              r0,r0,#1    ;Increment val
+  410 00000514 E2822026        ADD              r2,r2,#38   ;Get ascii value of
+                                                             remaining
+  411 00000518 E5C02000        STRB             r2,[r0]     ;Store to val
+  412 0000051C E2800001        ADD              r0,r0,#1    ;Increment val
+  413 00000520         btn_end
+  414 00000520 E3A03000        MOV              r3,#0       ;Store 0
+  415 00000524 E5C03000        STRB             r3,[r0]     ;Store to val
+  416 00000528 E5D40000        LDRB             r0,[r4]     ;Store val to strin
+                                                            g head
+  417 0000052C EBFFFF0B        BL               output_string ;Output val
+  418 00000530 E8BD4000        LDMFD            sp!, {lr}   ;Restore link regis
+                                                            ter
+  419 00000534 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  420 00000538         
+  421 00000538         
+  422 00000538         illuminateLEDs
+  423 00000538 E92D5FFF        STMFD            SP!,{r0-r12,lr} ;Store link reg
+                                                            ister
+  424 0000053C E1A04000        MOV              r4,r0
+  425 00000540 E3A03000        MOV              r3,#0       ;Set place counter 
+                                                            to 0
+  426 00000544 E3A06000        MOV              r6,#0       ;Set total to 0
+  427 00000548         bit_loop
+  428 00000548 E5D45000        LDRB             r5,[r4]     ;Load register with
+                                                             value in string he
+                                                            ad
+  429 0000054C E3550030        CMP              r5,#48      ;Is val 0?
+  430 00000550 0A000002        BEQ              led_cont    ;Goto cont
+  431 00000554 E3550031        CMP              r5,#49      ;Is val 1?
+  432 00000558 0A000000        BEQ              led_cont    ;Goto cont
+  433 0000055C EA00000E        B                led_err     ;Else, goto error
+  434 00000560         led_cont
+  435 00000560 E2455030        SUB              r5,r5,#48   ;Get actual value f
+                                                            rom ascii value
+  436 00000564 E1A05315        LSL              r5,r5,r3    ;Shift value by pla
+                                                            ce counter
+  437 00000568 E2833001        ADD              r3,r3,#1    ;Increment place co
+                                                            unter
+  438 0000056C E0866005        ADD              r6,r6,r5    ;Add actual value t
+                                                            o total
+  439 00000570 E2844001        ADD              r4,r4,#1    ;Increment tail by 
+
+
+
+ARM Macro Assembler    Page 12 
+
+
+                                                            1 
+  440 00000574 E3530003        CMP              r3,#3       ;Is place counter 3
+                                                            ?
+  441 00000578 DAFFFFF2        BLE              bit_loop    ;If less than or eq
+                                                            ual, goto loop
+  442 0000057C E59F1094        LDR              r1,=PINSEL1 ;Load pinsel1
+  443 00000580 E3A02001        MOV              r2,#1       ;Load 1
+  444 00000584 E5C12000        STRB             r2,[r1]     ;Store 1 to pinsel1
+                                                            
+  445 00000588 E59F1090        LDR              r1,=IO1DIR  ;Load direction cho
+                                                            oser
+  446 0000058C E1A02006        MOV              r2,r6       ;Load desired pin(2
+                                                            ) 
+  447 00000590 E5C12000        STRB             r2,[r1]     ;Store pin to direc
+                                                            tion
+  448 00000594         led_end
+  449 00000594 E8BD5FFF        LDMFD            sp!, {r0-r12,lr} ;Restore link 
+                                                            register
+  450 00000598 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  451 0000059C         led_err
+  452 0000059C E59F4084        LDR              r4,=ledErr  ;Load error prompt
+  453 000005A0 EBFFFEEE        BL               output_string ;output prompt
+  454 000005A4 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  455 000005A8         
+  456 000005A8         
+  457 000005A8         UART_init
+  458 000005A8 E92D4000        STMFD            SP!,{lr}
+  459 000005AC E3A03083        MOV              r3,#131     ;Copy 131 to r3
+  460 000005B0 E5C1300C        STRB             r3,[r1,#0xC] ;Store r1+0xC to 1
+                                                            31
+  461 000005B4 E3A03078        MOV              r3,#120     ;Copy 120 to r3
+  462 000005B8 E5C13000        STRB             r3,[r1]     ;Store 120 to r1
+  463 000005BC E3A03000        MOV              r3,#0       ;Copy 0 to r3
+  464 000005C0 E5C13004        STRB             r3,[r1,#0x4] ;Store 0 to r1+0x4
+                                                            
+  465 000005C4 E3A03003        MOV              r3,#3       ;Copy 3 to r3
+  466 000005C8 E5C1300C        STRB             r3,[r1,#0xC] ;Store 3 to r1+0xC
+                                                            
+  467 000005CC E8BD4000        LDMFD            SP!, {lr}   ; Restore register 
+                                                            lr from stack 
+  468 000005D0 E12FFF1E        BX               lr          ;Go back to whence 
+                                                            you came
+  469 000005D4                 END
+              E000C000 
+              00000000 
+              00000000 
+              00000000 
+              E0028004 
+              E002800C 
+              0000B780 
+              00009580 
+              00008780 
+              0000A680 
+              0000B680 
+              0000A380 
+              0000B380 
+              0000B480 
+
+
+
+ARM Macro Assembler    Page 13 
+
+
+              0000B080 
+              E0028008 
+              00000000 
+              E002C004 
+              00000000 
+              E0028018 
+              E0028010 
+              00000000 
+Command Line: --debug --xref --diag_suppress=9931 --apcs=interwork --depend=.\o
+bjects\library7.d -o.\objects\library7.o -IC:\Keil_v5\ARM\RV31\INC -IC:\Keil_v5
+\ARM\CMSIS\Include -IC:\Keil_v5\ARM\INC\Philips --predefine="__EVAL SETA 1" --p
+redefine="__UVISION_VERSION SETA 524" --list=.\listings\library7.lst library7.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+INCR 000003B8
+
+Symbol: INCR
+   Definitions
+      At line 281 in file library7.s
+   Uses
+      At line 272 in file library7.s
+Comment: INCR used once
+UART_init 000005A8
+
+Symbol: UART_init
+   Definitions
+      At line 457 in file library7.s
+   Uses
+      None
+Comment: UART_init unused
+bit_loop 00000548
+
+Symbol: bit_loop
+   Definitions
+      At line 427 in file library7.s
+   Uses
+      At line 441 in file library7.s
+Comment: bit_loop used once
+blue 00000434
+
+Symbol: blue
+   Definitions
+      At line 337 in file library7.s
+   Uses
+      At line 322 in file library7.s
+Comment: blue used once
+btn_digit 000004F8
+
+Symbol: btn_digit
+   Definitions
+      At line 401 in file library7.s
+   Uses
+      At line 396 in file library7.s
+Comment: btn_digit used once
+btn_end 00000520
+
+Symbol: btn_end
+   Definitions
+      At line 413 in file library7.s
+   Uses
+      At line 405 in file library7.s
+Comment: btn_end used once
+btn_letter 00000508
+
+Symbol: btn_letter
+   Definitions
+      At line 406 in file library7.s
+   Uses
+      At line 398 in file library7.s
+Comment: btn_letter used once
+color_select 000003E8
+
+Symbol: color_select
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Relocatable symbols
+
+   Definitions
+      At line 314 in file library7.s
+   Uses
+      None
+Comment: color_select unused
+dglup 000001C8
+
+Symbol: dglup
+   Definitions
+      At line 113 in file library7.s
+   Uses
+      At line 110 in file library7.s
+Comment: dglup used once
+display_digit_on_7_seg 000001A8
+
+Symbol: display_digit_on_7_seg
+   Definitions
+      At line 103 in file library7.s
+   Uses
+      At line 294 in file library7.s
+Comment: display_digit_on_7_seg used once
+green 00000424
+
+Symbol: green
+   Definitions
+      At line 331 in file library7.s
+   Uses
+      At line 320 in file library7.s
+Comment: green used once
+illuminateLEDs 00000538
+
+Symbol: illuminateLEDs
+   Definitions
+      At line 422 in file library7.s
+   Uses
+      None
+Comment: illuminateLEDs unused
+illuminate_RGB_LED 000003E4
+
+Symbol: illuminate_RGB_LED
+   Definitions
+      At line 312 in file library7.s
+   Uses
+      At line 358 in file library7.s
+Comment: illuminate_RGB_LED used once
+input 000000C8
+
+Symbol: input
+   Definitions
+      At line 35 in file library7.s
+   Uses
+      At line 59 in file library7.s
+Comment: input used once
+ledErr 00000000
+
+Symbol: ledErr
+   Definitions
+      At line 23 in file library7.s
+   Uses
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Relocatable symbols
+
+      At line 452 in file library7.s
+Comment: ledErr used once
+led_cont 00000560
+
+Symbol: led_cont
+   Definitions
+      At line 434 in file library7.s
+   Uses
+      At line 430 in file library7.s
+      At line 432 in file library7.s
+
+led_end 00000594
+
+Symbol: led_end
+   Definitions
+      At line 448 in file library7.s
+   Uses
+      None
+Comment: led_end unused
+led_err 0000059C
+
+Symbol: led_err
+   Definitions
+      At line 451 in file library7.s
+   Uses
+      At line 433 in file library7.s
+Comment: led_err used once
+library 00000000
+
+Symbol: library
+   Definitions
+      At line 1 in file library7.s
+   Uses
+      None
+Comment: library unused
+not_end 00000134
+
+Symbol: not_end
+   Definitions
+      At line 68 in file library7.s
+   Uses
+      At line 66 in file library7.s
+Comment: not_end used once
+output_character 000000F4
+
+Symbol: output_character
+   Definitions
+      At line 48 in file library7.s
+   Uses
+      At line 53 in file library7.s
+      At line 64 in file library7.s
+      At line 87 in file library7.s
+
+output_string 00000160
+
+Symbol: output_string
+   Definitions
+      At line 81 in file library7.s
+   Uses
+
+
+
+ARM Macro Assembler    Page 4 Alphabetic symbol ordering
+Relocatable symbols
+
+      At line 292 in file library7.s
+      At line 357 in file library7.s
+      At line 417 in file library7.s
+      At line 453 in file library7.s
+
+output_string_end 00000188
+
+Symbol: output_string_end
+   Definitions
+      At line 93 in file library7.s
+   Uses
+      At line 91 in file library7.s
+Comment: output_string_end used once
+output_string_loop 00000170
+
+Symbol: output_string_loop
+   Definitions
+      At line 86 in file library7.s
+   Uses
+      At line 92 in file library7.s
+Comment: output_string_loop used once
+purple 00000444
+
+Symbol: purple
+   Definitions
+      At line 343 in file library7.s
+   Uses
+      At line 326 in file library7.s
+Comment: purple used once
+read_character 000000D0
+
+Symbol: read_character
+   Definitions
+      At line 37 in file library7.s
+   Uses
+      At line 42 in file library7.s
+      At line 63 in file library7.s
+
+read_from_push_btns 00000474
+
+Symbol: read_from_push_btns
+   Definitions
+      At line 361 in file library7.s
+   Uses
+      None
+Comment: read_from_push_btns unused
+read_loop 00000120
+
+Symbol: read_loop
+   Definitions
+      At line 62 in file library7.s
+   Uses
+      At line 72 in file library7.s
+Comment: read_loop used once
+read_string 00000110
+
+Symbol: read_string
+   Definitions
+      At line 57 in file library7.s
+
+
+
+ARM Macro Assembler    Page 5 Alphabetic symbol ordering
+Relocatable symbols
+
+   Uses
+      At line 293 in file library7.s
+Comment: read_string used once
+red 0000042C
+
+Symbol: red
+   Definitions
+      At line 334 in file library7.s
+   Uses
+      At line 318 in file library7.s
+Comment: red used once
+rgbErr 0000002C
+
+Symbol: rgbErr
+   Definitions
+      At line 25 in file library7.s
+   Uses
+      At line 356 in file library7.s
+Comment: rgbErr used once
+rgb_cont 0000044C
+
+Symbol: rgb_cont
+   Definitions
+      At line 346 in file library7.s
+   Uses
+      At line 330 in file library7.s
+      At line 333 in file library7.s
+      At line 336 in file library7.s
+      At line 339 in file library7.s
+      At line 342 in file library7.s
+      At line 345 in file library7.s
+
+rgb_err 00000468
+
+Symbol: rgb_err
+   Definitions
+      At line 355 in file library7.s
+   Uses
+      At line 327 in file library7.s
+Comment: rgb_err used once
+segErr 00000064
+
+Symbol: segErr
+   Definitions
+      At line 27 in file library7.s
+   Uses
+      At line 291 in file library7.s
+Comment: segErr used once
+segPos 000000B8
+
+Symbol: segPos
+   Definitions
+      At line 31 in file library7.s
+   Uses
+      At line 107 in file library7.s
+      At line 274 in file library7.s
+      At line 282 in file library7.s
+
+segPrompt 0000008C
+
+
+
+ARM Macro Assembler    Page 6 Alphabetic symbol ordering
+Relocatable symbols
+
+
+Symbol: segPrompt
+   Definitions
+      At line 29 in file library7.s
+   Uses
+      None
+Comment: segPrompt unused
+seg_err 000003D4
+
+Symbol: seg_err
+   Definitions
+      At line 290 in file library7.s
+   Uses
+      None
+Comment: seg_err unused
+sevenSegCont 00000368
+
+Symbol: sevenSegCont
+   Definitions
+      At line 243 in file library7.s
+   Uses
+      At line 181 in file library7.s
+      At line 184 in file library7.s
+      At line 194 in file library7.s
+      At line 197 in file library7.s
+      At line 200 in file library7.s
+      At line 203 in file library7.s
+      At line 206 in file library7.s
+      At line 209 in file library7.s
+      At line 212 in file library7.s
+      At line 215 in file library7.s
+      At line 218 in file library7.s
+      At line 221 in file library7.s
+      At line 224 in file library7.s
+      At line 227 in file library7.s
+      At line 230 in file library7.s
+      At line 233 in file library7.s
+      At line 236 in file library7.s
+      At line 239 in file library7.s
+      At line 242 in file library7.s
+
+sevenSegExit 000003B0
+
+Symbol: sevenSegExit
+   Definitions
+      At line 277 in file library7.s
+   Uses
+      At line 289 in file library7.s
+Comment: sevenSegExit used once
+sevenSegFin 0000036C
+
+Symbol: sevenSegFin
+   Definitions
+      At line 257 in file library7.s
+   Uses
+      At line 244 in file library7.s
+Comment: sevenSegFin used once
+stage_fin 000004E0
+
+
+
+
+ARM Macro Assembler    Page 7 Alphabetic symbol ordering
+Relocatable symbols
+
+Symbol: stage_fin
+   Definitions
+      At line 393 in file library7.s
+   Uses
+      At line 391 in file library7.s
+Comment: stage_fin used once
+stage_four 000004D0
+
+Symbol: stage_four
+   Definitions
+      At line 388 in file library7.s
+   Uses
+      At line 386 in file library7.s
+Comment: stage_four used once
+stage_three 000004C0
+
+Symbol: stage_three
+   Definitions
+      At line 383 in file library7.s
+   Uses
+      At line 381 in file library7.s
+Comment: stage_three used once
+stage_two 000004B0
+
+Symbol: stage_two
+   Definitions
+      At line 378 in file library7.s
+   Uses
+      At line 376 in file library7.s
+Comment: stage_two used once
+tailLoc 000000BC
+
+Symbol: tailLoc
+   Definitions
+      At line 33 in file library7.s
+   Uses
+      At line 111 in file library7.s
+      At line 114 in file library7.s
+      At line 186 in file library7.s
+      At line 286 in file library7.s
+
+tis0 000002E8
+
+Symbol: tis0
+   Definitions
+      At line 195 in file library7.s
+   Uses
+      At line 133 in file library7.s
+Comment: tis0 used once
+tis1 000002F0
+
+Symbol: tis1
+   Definitions
+      At line 198 in file library7.s
+   Uses
+      At line 135 in file library7.s
+Comment: tis1 used once
+tis2 000002F8
+
+
+
+
+ARM Macro Assembler    Page 8 Alphabetic symbol ordering
+Relocatable symbols
+
+Symbol: tis2
+   Definitions
+      At line 201 in file library7.s
+   Uses
+      At line 137 in file library7.s
+Comment: tis2 used once
+tis3 00000300
+
+Symbol: tis3
+   Definitions
+      At line 204 in file library7.s
+   Uses
+      At line 139 in file library7.s
+Comment: tis3 used once
+tis4 00000308
+
+Symbol: tis4
+   Definitions
+      At line 207 in file library7.s
+   Uses
+      At line 141 in file library7.s
+Comment: tis4 used once
+tis5 00000310
+
+Symbol: tis5
+   Definitions
+      At line 210 in file library7.s
+   Uses
+      At line 143 in file library7.s
+Comment: tis5 used once
+tis6 00000318
+
+Symbol: tis6
+   Definitions
+      At line 213 in file library7.s
+   Uses
+      At line 145 in file library7.s
+Comment: tis6 used once
+tis7 00000320
+
+Symbol: tis7
+   Definitions
+      At line 216 in file library7.s
+   Uses
+      At line 147 in file library7.s
+Comment: tis7 used once
+tis8 00000328
+
+Symbol: tis8
+   Definitions
+      At line 219 in file library7.s
+   Uses
+      At line 149 in file library7.s
+Comment: tis8 used once
+tis9 00000330
+
+Symbol: tis9
+   Definitions
+      At line 222 in file library7.s
+
+
+
+ARM Macro Assembler    Page 9 Alphabetic symbol ordering
+Relocatable symbols
+
+   Uses
+      At line 151 in file library7.s
+Comment: tis9 used once
+tisA 00000338
+
+Symbol: tisA
+   Definitions
+      At line 225 in file library7.s
+   Uses
+      At line 153 in file library7.s
+      At line 155 in file library7.s
+
+tisB 00000340
+
+Symbol: tisB
+   Definitions
+      At line 228 in file library7.s
+   Uses
+      At line 157 in file library7.s
+      At line 159 in file library7.s
+
+tisC 00000348
+
+Symbol: tisC
+   Definitions
+      At line 231 in file library7.s
+   Uses
+      At line 161 in file library7.s
+      At line 163 in file library7.s
+
+tisClear 000002E0
+
+Symbol: tisClear
+   Definitions
+      At line 192 in file library7.s
+   Uses
+      At line 130 in file library7.s
+Comment: tisClear used once
+tisD 00000350
+
+Symbol: tisD
+   Definitions
+      At line 234 in file library7.s
+   Uses
+      At line 165 in file library7.s
+      At line 167 in file library7.s
+
+tisE 00000358
+
+Symbol: tisE
+   Definitions
+      At line 237 in file library7.s
+   Uses
+      At line 169 in file library7.s
+      At line 171 in file library7.s
+
+tisF 00000360
+
+Symbol: tisF
+
+
+
+ARM Macro Assembler    Page 10 Alphabetic symbol ordering
+Relocatable symbols
+
+   Definitions
+      At line 240 in file library7.s
+   Uses
+      At line 173 in file library7.s
+      At line 175 in file library7.s
+
+tisInit 000002BC
+
+Symbol: tisInit
+   Definitions
+      At line 179 in file library7.s
+   Uses
+      At line 122 in file library7.s
+Comment: tisInit used once
+tisInv 000002C4
+
+Symbol: tisInv
+   Definitions
+      At line 182 in file library7.s
+   Uses
+      At line 176 in file library7.s
+Comment: tisInv used once
+tisNull 000002CC
+
+Symbol: tisNull
+   Definitions
+      At line 185 in file library7.s
+   Uses
+      At line 120 in file library7.s
+Comment: tisNull used once
+white 0000041C
+
+Symbol: white
+   Definitions
+      At line 328 in file library7.s
+   Uses
+      At line 316 in file library7.s
+Comment: white used once
+yellow 0000043C
+
+Symbol: yellow
+   Definitions
+      At line 340 in file library7.s
+   Uses
+      At line 324 in file library7.s
+Comment: yellow used once
+67 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Absolute symbols
+
+BLUE 00000004
+
+Symbol: BLUE
+   Definitions
+      At line 18 in file library7.s
+   Uses
+      At line 338 in file library7.s
+Comment: BLUE used once
+GREEN 00000020
+
+Symbol: GREEN
+   Definitions
+      At line 17 in file library7.s
+   Uses
+      At line 332 in file library7.s
+Comment: GREEN used once
+IO0CLR E002800C
+
+Symbol: IO0CLR
+   Definitions
+      At line 10 in file library7.s
+   Uses
+      At line 126 in file library7.s
+Comment: IO0CLR used once
+IO0DIR E0028008
+
+Symbol: IO0DIR
+   Definitions
+      At line 6 in file library7.s
+   Uses
+      At line 258 in file library7.s
+      At line 350 in file library7.s
+
+IO0PIN E0028000
+
+Symbol: IO0PIN
+   Definitions
+      At line 12 in file library7.s
+   Uses
+      None
+Comment: IO0PIN unused
+IO0SET E0028004
+
+Symbol: IO0SET
+   Definitions
+      At line 8 in file library7.s
+   Uses
+      At line 124 in file library7.s
+      At line 267 in file library7.s
+
+IO1CLR E002801C
+
+Symbol: IO1CLR
+   Definitions
+      At line 11 in file library7.s
+   Uses
+      None
+Comment: IO1CLR unused
+IO1DIR E0028018
+
+
+
+ARM Macro Assembler    Page 2 Alphabetic symbol ordering
+Absolute symbols
+
+
+Symbol: IO1DIR
+   Definitions
+      At line 7 in file library7.s
+   Uses
+      At line 364 in file library7.s
+      At line 445 in file library7.s
+
+IO1PIN E0028010
+
+Symbol: IO1PIN
+   Definitions
+      At line 13 in file library7.s
+   Uses
+      At line 368 in file library7.s
+Comment: IO1PIN used once
+IO1SET E0028014
+
+Symbol: IO1SET
+   Definitions
+      At line 9 in file library7.s
+   Uses
+      None
+Comment: IO1SET unused
+PINSEL0 E002C000
+
+Symbol: PINSEL0
+   Definitions
+      At line 4 in file library7.s
+   Uses
+      None
+Comment: PINSEL0 unused
+PINSEL1 E002C004
+
+Symbol: PINSEL1
+   Definitions
+      At line 5 in file library7.s
+   Uses
+      At line 347 in file library7.s
+      At line 442 in file library7.s
+
+PURPLE 00000006
+
+Symbol: PURPLE
+   Definitions
+      At line 19 in file library7.s
+   Uses
+      At line 344 in file library7.s
+Comment: PURPLE used once
+RED 00000002
+
+Symbol: RED
+   Definitions
+      At line 16 in file library7.s
+   Uses
+      At line 335 in file library7.s
+Comment: RED used once
+RGBOFF 00000000
+
+
+
+
+ARM Macro Assembler    Page 3 Alphabetic symbol ordering
+Absolute symbols
+
+Symbol: RGBOFF
+   Definitions
+      At line 21 in file library7.s
+   Uses
+      None
+Comment: RGBOFF unused
+U0LSR 00000014
+
+Symbol: U0LSR
+   Definitions
+      At line 3 in file library7.s
+   Uses
+      At line 39 in file library7.s
+      At line 50 in file library7.s
+
+WHITE 00000026
+
+Symbol: WHITE
+   Definitions
+      At line 15 in file library7.s
+   Uses
+      At line 329 in file library7.s
+Comment: WHITE used once
+YELLOW 00000022
+
+Symbol: YELLOW
+   Definitions
+      At line 20 in file library7.s
+   Uses
+      At line 341 in file library7.s
+Comment: YELLOW used once
+18 symbols
+419 symbols in table
